@@ -7,13 +7,15 @@ import DataPengajuanAlsintan from "./pages/DataPengajuanAlsintan";
 import DataKriteria from "./pages/DataKriteria";
 import DataPenilaian from "./pages/DataPenilaian";
 import DataHasilRekomendasi from "./pages/DataHasilRekomendasi";
+import StatusAlsintan from "./pages/StatusAlsintan";
 import DataPoktan from "./pages/DataPoktan";
+import Endpoint from "./components/Endpoint";
 
 function LayoutWithSidebar({ children }) {
   return (
     <div className="flex bg-gray-100 min-h-screen">
       <Sidebar />
-      <main className="flex-1 ml-0 md:p-8 p-4 max-w-full bg-gray-100">
+      <main className="flex-1 ml-0 md:p-8 p-4 max-w-full bg-[#dfdfdf]">
         {children}
       </main>
     </div>
@@ -39,7 +41,9 @@ function App() {
                 <Route path="kriteria" element={<DataKriteria />} />
                 <Route path="penilaian" element={<DataPenilaian />} />
                 <Route path="hasil" element={<DataHasilRekomendasi />} />
+                <Route path="status-alsintan" element={<StatusAlsintan />} />
                 <Route path="poktan" element={<DataPoktan />} />
+                <Route path="endpoint" element={<Endpoint />} />
               </Routes>
             </LayoutWithSidebar>
           }

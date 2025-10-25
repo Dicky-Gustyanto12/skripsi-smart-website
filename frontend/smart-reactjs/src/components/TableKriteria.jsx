@@ -1,29 +1,46 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 
-export default function TableKriteria() {
-  const initialData = [
-    { id: 1, kode: "KR01", kriteria: "Harga", bobot: 0.4, normalisasi: 0.5 },
-    {
-      id: 2,
-      kode: "KR02",
-      kriteria: "Kualitas",
-      bobot: 0.3,
-      normalisasi: 0.375,
-    },
-  ];
+// Skeleton Loading Component
+function TableSkeleton({ rows = 4 }) {
+  return (
+    <tbody>
+      {Array.from({ length: rows }).map((_, idx) => (
+        <tr key={idx} className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+          {Array(5)
+            .fill()
+            .map((_, col) => (
+              <td key={col} className="py-3 px-6 animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+              </td>
+            ))}
+        </tr>
+      ))}
+    </tbody>
+  );
+}
 
-  const [data, setData] = useState(initialData);
+export default function TableKriteria() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [popupOpen, setPopupOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [formValues, setFormValues] = useState({
-    id: null,
+    id_kriteria: null,
     kode: "",
     kriteria: "",
     bobot: "",
-    normalisasi: "",
   });
+
+  // Fetch data dari endpoint
+  useEffect(() => {
+    setLoading(true);
+    fetch("http://localhost:8000/api/kriteria")
+      .then((res) => res.json())
+      .then((result) => setData(result))
+      .finally(() => setLoading(false));
+  }, []);
 
   const handleChange = (e) => {
     const { name, value } = e.target;
@@ -32,18 +49,22 @@ export default function TableKriteria() {
 
   const openAddPopup = () => {
     setFormValues({
-      id: null,
+      id_kriteria: null,
       kode: "",
       kriteria: "",
       bobot: "",
-      normalisasi: "",
     });
     setEditMode(false);
     setPopupOpen(true);
   };
 
   const openEditPopup = (item) => {
-    setFormValues(item);
+    setFormValues({
+      id_kriteria: item.id_kriteria,
+      kode: item.kode,
+      kriteria: item.kriteria,
+      bobot: item.bobot,
+    });
     setEditMode(true);
     setPopupOpen(true);
   };
@@ -51,33 +72,67 @@ export default function TableKriteria() {
   const closePopup = () => setPopupOpen(false);
 
   const handleSave = () => {
-    if (
-      !formValues.kode ||
-      !formValues.kriteria ||
-      !formValues.bobot ||
-      !formValues.normalisasi
-    ) {
-      alert("Semua field harus diisi");
+    if (!formValues.kode || !formValues.kriteria || !formValues.bobot) {
+      Swal.fire("Lengkapi semua field!", "", "warning");
       return;
     }
-
-    if (editMode) {
-      setData((prev) =>
-        prev.map((item) => (item.id === formValues.id ? formValues : item))
-      );
-    } else {
-      const newItem = {
-        ...formValues,
-        id: data.length ? Math.max(...data.map((d) => d.id)) + 1 : 1,
-        bobot: parseFloat(formValues.bobot),
-        normalisasi: parseFloat(formValues.normalisasi),
-      };
-      setData((prev) => [...prev, newItem]);
-    }
-    closePopup();
+    Swal.fire({
+      title: editMode ? "Konfirmasi update?" : "Konfirmasi tambah?",
+      icon: "question",
+      showCancelButton: true,
+      confirmButtonText: "Ya",
+      cancelButtonText: "Tidak",
+      confirmButtonColor: "#4ade80",
+      cancelButtonColor: "#e5e7eb",
+    }).then((result) => {
+      if (result.isConfirmed) {
+        setLoading(true);
+        const payload = {
+          kode: formValues.kode,
+          kriteria: formValues.kriteria,
+          bobot: parseFloat(formValues.bobot),
+        };
+        if (editMode) {
+          fetch(
+            `http://localhost:8000/api/kriteria/${formValues.id_kriteria}`,
+            {
+              method: "PUT",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify(payload),
+            }
+          )
+            .then((res) => res.json())
+            .then((updated) => {
+              setData((prev) =>
+                prev.map((item) =>
+                  item.id_kriteria === updated.id_kriteria ? updated : item
+                )
+              );
+              closePopup();
+              Swal.fire("Berhasil!", "Data berhasil diupdate.", "success");
+            })
+            .finally(() => setLoading(false));
+        } else {
+          fetch("http://localhost:8000/api/kriteria", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(payload),
+          })
+            .then((res) => res.json())
+            .then((newItem) => {
+              setData((prev) => [...prev, newItem]);
+              closePopup();
+              Swal.fire("Berhasil!", "Data berhasil ditambahkan.", "success");
+            })
+            .finally(() => setLoading(false));
+        }
+      } else {
+        Swal.fire("Batal", "Tidak ada data yang diubah", "info");
+      }
+    });
   };
 
-  const handleDelete = (id) => {
+  const handleDelete = (id_kriteria) => {
     Swal.fire({
       title: "Yakin ingin menghapus data?",
       icon: "warning",
@@ -87,8 +142,21 @@ export default function TableKriteria() {
       confirmButtonColor: "#dc2626",
       cancelButtonColor: "#6b7280",
     }).then((result) => {
-      if (result.isConfirmed)
-        setData((prev) => prev.filter((item) => item.id !== id));
+      if (result.isConfirmed) {
+        setLoading(true);
+        fetch(`http://localhost:8000/api/kriteria/${id_kriteria}`, {
+          method: "DELETE",
+        })
+          .then(() => {
+            setData((prev) =>
+              prev.filter((item) => item.id_kriteria !== id_kriteria)
+            );
+            Swal.fire("Berhasil!", "Data berhasil dihapus.", "success");
+          })
+          .finally(() => setLoading(false));
+      } else {
+        Swal.fire("Batal", "Data tidak dihapus", "info");
+      }
     });
   };
 
@@ -108,43 +176,44 @@ export default function TableKriteria() {
             <th className="py-3 px-6 text-left">Kode</th>
             <th className="py-3 px-6 text-left">Kriteria</th>
             <th className="py-3 px-6 text-center">Bobot</th>
-            <th className="py-3 px-6 text-center">Normalisasi</th>
             <th className="py-3 px-6 text-center">Aksi</th>
           </tr>
         </thead>
-        <tbody className="text-gray-600 text-sm">
-          {data.map((item, idx) => (
-            <tr
-              key={item.id}
-              className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"}
-            >
-              <td className="py-3 px-6 text-center">{idx + 1}</td>
-              <td className="py-3 px-6">{item.kode}</td>
-              <td className="py-3 px-6">{item.kriteria}</td>
-              <td className="py-3 px-6 text-center">{item.bobot}</td>
-              <td className="py-3 px-6 text-center">{item.normalisasi}</td>
-              <td className="py-3 px-6 flex justify-center space-x-4">
-                <button
-                  onClick={() => openEditPopup(item)}
-                  title="Edit"
-                  className="hover:text-blue-700 cursor-pointer"
-                >
-                  <PencilSquareIcon className="h-5 w-5 text-blue-600 hover:text-blue-800" />
-                </button>
-                <button
-                  onClick={() => handleDelete(item.id)}
-                  title="Hapus"
-                  className="hover:text-red-700 cursor-pointer"
-                >
-                  <TrashIcon className="h-5 w-5 text-red-600 hover:text-red-800" />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
+        {loading ? (
+          <TableSkeleton rows={4} />
+        ) : (
+          <tbody className="text-gray-600 text-sm">
+            {data.map((item, idx) => (
+              <tr
+                key={item.id_kriteria}
+                className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"}
+              >
+                <td className="py-3 px-6 text-center">{idx + 1}</td>
+                <td className="py-3 px-6">{item.kode}</td>
+                <td className="py-3 px-6">{item.kriteria}</td>
+                <td className="py-3 px-6 text-center">{item.bobot}</td>
+                <td className="py-3 px-6 flex justify-center space-x-4">
+                  <button
+                    onClick={() => openEditPopup(item)}
+                    title="Edit"
+                    className="hover:text-blue-700 cursor-pointer"
+                  >
+                    <PencilSquareIcon className="h-5 w-5 text-blue-600 hover:text-blue-800" />
+                  </button>
+                  <button
+                    onClick={() => handleDelete(item.id_kriteria)}
+                    title="Hapus"
+                    className="hover:text-red-700 cursor-pointer"
+                  >
+                    <TrashIcon className="h-5 w-5 text-red-600 hover:text-red-800" />
+                  </button>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        )}
       </table>
 
-      {/* Popup Modal Add/Edit */}
       {popupOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
           <div className="bg-white rounded shadow-lg p-6 w-full max-w-md">
@@ -174,15 +243,6 @@ export default function TableKriteria() {
                 name="bobot"
                 placeholder="Bobot"
                 value={formValues.bobot}
-                onChange={handleChange}
-                className="w-full border p-2 rounded"
-              />
-              <input
-                type="number"
-                step="0.01"
-                name="normalisasi"
-                placeholder="Normalisasi"
-                value={formValues.normalisasi}
                 onChange={handleChange}
                 className="w-full border p-2 rounded"
               />

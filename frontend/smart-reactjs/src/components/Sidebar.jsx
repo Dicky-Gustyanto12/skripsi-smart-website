@@ -19,6 +19,11 @@ const menu = [
     icon: <HomeIcon className="h-5 w-5" />,
   },
   {
+    to: "/poktan",
+    label: "Data Kelompok Tani",
+    icon: <UsersIcon className="h-5 w-5" />,
+  },
+  {
     to: "/pengajuan",
     label: "Data Pengajuan Alsintan",
     icon: <DocumentTextIcon className="h-5 w-5" />,
@@ -39,8 +44,8 @@ const menu = [
     icon: <CheckBadgeIcon className="h-5 w-5" />,
   },
   {
-    to: "/poktan",
-    label: "Data Kelompok Tani",
+    to: "/status-alsintan",
+    label: "Status Penerimaan Alsintan",
     icon: <UsersIcon className="h-5 w-5" />,
   },
 ];
@@ -67,22 +72,22 @@ export default function Sidebar() {
   };
 
   return (
-    <aside className="bg-gray-800 text-white w-64 min-h-screen p-4 pt-6 flex flex-col">
+    <aside className="bg-[#2c342f] text-white w-64 min-h-screen p-4 pt-6 flex flex-col ">
       {/* Logo */}
       <div className="mb-6 flex justify-center">
         <img
           src="/logo.png"
           alt="Logo"
-          className="h-20 w-auto object-contain rounded"
+          className="h-20 w-auto object-contain rounded-2xl"
         />
       </div>
 
       {/* Navbar Akun Profil (klik menuju edit profil) */}
       <Link
         to="/edit-profil"
-        className="mb-10 p-3 bg-gray-900 rounded flex items-center gap-3 hover:bg-gray-700 transition"
+        className="mb-10 p-3 bg-gray-900 rounded-2xl flex items-center gap-3 hover:bg-gray-700 transition"
       >
-        <UserCircleIcon className="h-10 w-10 rounded-full bg-gray-700 p-1" />
+        <UserCircleIcon className="h-10 w-10 rounded-2xl bg-gray-700 p-1" />
         <div>
           <p className="font-semibold text-lg">Admin</p>
           <p className="text-gray-400 text-sm">admin@example.com</p>

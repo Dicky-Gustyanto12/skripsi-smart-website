@@ -54,7 +54,7 @@ export default function TableHasilRekomendasi() {
               K1 - Status Terdaftar di Dinas
             </th>
             <th className="px-4 py-3 text-left font-semibold">
-              K2 - Lokasi Poktan
+              K2 - Lokasi Poktan2
             </th>
             <th className="px-4 py-3 text-left font-semibold">
               K3 - Pernah menerima bantuan
