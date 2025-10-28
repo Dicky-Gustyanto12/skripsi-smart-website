@@ -1,4 +1,5 @@
 import TableKriteria from "../components/TableKriteria";
+import TableParameter from "../components/TableParameter";
 
 export default function DataKriteria() {
   return (
@@ -7,6 +8,7 @@ export default function DataKriteria() {
         LIST KRITERIA DAN BOBOT
       </h1>
       <TableKriteria />
+      <TableParameter />
     </div>
   );
 }

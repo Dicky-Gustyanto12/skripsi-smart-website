@@ -2,19 +2,16 @@ import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 
-// Skeleton Loading Component
-function TableSkeleton({ rows = 4 }) {
+function TableSkeleton({ rows = 4, cols = 6 }) {
   return (
     <tbody>
       {Array.from({ length: rows }).map((_, idx) => (
         <tr key={idx} className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-          {Array(5)
-            .fill()
-            .map((_, col) => (
-              <td key={col} className="py-3 px-6 animate-pulse">
-                <div className="h-4 bg-gray-200 rounded w-full"></div>
-              </td>
-            ))}
+          {Array.from({ length: cols }).map((_, col) => (
+            <td key={col} className="py-3 px-6 animate-pulse">
+              <div className="h-4 bg-gray-200 rounded w-full"></div>
+            </td>
+          ))}
         </tr>
       ))}
     </tbody>
@@ -33,13 +30,20 @@ export default function TableKriteria() {
     bobot: "",
   });
 
-  // Fetch data dari endpoint
-  useEffect(() => {
+  // Fetch data kriteria
+  const fetchKriteria = () => {
     setLoading(true);
     fetch("http://localhost:8000/api/kriteria")
       .then((res) => res.json())
-      .then((result) => setData(result))
+      .then((result) => {
+        const arr = Array.isArray(result) ? result : result.data;
+        setData(arr);
+      })
       .finally(() => setLoading(false));
+  };
+
+  useEffect(() => {
+    fetchKriteria();
   }, []);
 
   const handleChange = (e) => {
@@ -71,6 +75,7 @@ export default function TableKriteria() {
 
   const closePopup = () => setPopupOpen(false);
 
+  // Tambah/Edit (tabel skleton tampil jika loading)
   const handleSave = () => {
     if (!formValues.kode || !formValues.kriteria || !formValues.bobot) {
       Swal.fire("Lengkapi semua field!", "", "warning");
@@ -82,8 +87,6 @@ export default function TableKriteria() {
       showCancelButton: true,
       confirmButtonText: "Ya",
       cancelButtonText: "Tidak",
-      confirmButtonColor: "#4ade80",
-      cancelButtonColor: "#e5e7eb",
     }).then((result) => {
       if (result.isConfirmed) {
         setLoading(true);
@@ -92,46 +95,33 @@ export default function TableKriteria() {
           kriteria: formValues.kriteria,
           bobot: parseFloat(formValues.bobot),
         };
-        if (editMode) {
-          fetch(
-            `http://localhost:8000/api/kriteria/${formValues.id_kriteria}`,
-            {
-              method: "PUT",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify(payload),
-            }
-          )
-            .then((res) => res.json())
-            .then((updated) => {
-              setData((prev) =>
-                prev.map((item) =>
-                  item.id_kriteria === updated.id_kriteria ? updated : item
-                )
-              );
-              closePopup();
-              Swal.fire("Berhasil!", "Data berhasil diupdate.", "success");
-            })
-            .finally(() => setLoading(false));
-        } else {
-          fetch("http://localhost:8000/api/kriteria", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify(payload),
+        const endpoint = editMode
+          ? `http://localhost:8000/api/kriteria/${formValues.id_kriteria}`
+          : `http://localhost:8000/api/kriteria`;
+        const method = editMode ? "PUT" : "POST";
+        fetch(endpoint, {
+          method: method,
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload),
+        })
+          .then((res) => res.json())
+          .then(() => {
+            closePopup();
+            fetchKriteria();
+            Swal.fire(
+              "Berhasil!",
+              editMode ? "Data berhasil diupdate" : "Data berhasil ditambahkan",
+              "success"
+            );
           })
-            .then((res) => res.json())
-            .then((newItem) => {
-              setData((prev) => [...prev, newItem]);
-              closePopup();
-              Swal.fire("Berhasil!", "Data berhasil ditambahkan.", "success");
-            })
-            .finally(() => setLoading(false));
-        }
+          .finally(() => setLoading(false));
       } else {
         Swal.fire("Batal", "Tidak ada data yang diubah", "info");
       }
     });
   };
 
+  // Hapus (tabel skleton tampil jika loading)
   const handleDelete = (id_kriteria) => {
     Swal.fire({
       title: "Yakin ingin menghapus data?",
@@ -139,19 +129,20 @@ export default function TableKriteria() {
       showCancelButton: true,
       confirmButtonText: "Ya",
       cancelButtonText: "Tidak",
-      confirmButtonColor: "#dc2626",
-      cancelButtonColor: "#6b7280",
     }).then((result) => {
       if (result.isConfirmed) {
         setLoading(true);
         fetch(`http://localhost:8000/api/kriteria/${id_kriteria}`, {
           method: "DELETE",
         })
-          .then(() => {
-            setData((prev) =>
-              prev.filter((item) => item.id_kriteria !== id_kriteria)
-            );
-            Swal.fire("Berhasil!", "Data berhasil dihapus.", "success");
+          .then((res) => res.json())
+          .then((res) => {
+            if (res.success) {
+              fetchKriteria();
+              Swal.fire("Berhasil!", "Data berhasil dihapus", "success");
+            } else {
+              Swal.fire("Gagal!", res.message || "Gagal hapus data.", "error");
+            }
           })
           .finally(() => setLoading(false));
       } else {
@@ -161,7 +152,7 @@ export default function TableKriteria() {
   };
 
   return (
-    <div className="p-6">
+    <div className="mb-10">
       <h2 className="text-2xl font-bold mb-4">Daftar Kriteria</h2>
       <button
         onClick={openAddPopup}
@@ -176,11 +167,12 @@ export default function TableKriteria() {
             <th className="py-3 px-6 text-left">Kode</th>
             <th className="py-3 px-6 text-left">Kriteria</th>
             <th className="py-3 px-6 text-center">Bobot</th>
+            <th className="py-3 px-6 text-center">Normalisasi</th>
             <th className="py-3 px-6 text-center">Aksi</th>
           </tr>
         </thead>
         {loading ? (
-          <TableSkeleton rows={4} />
+          <TableSkeleton rows={4} cols={6} />
         ) : (
           <tbody className="text-gray-600 text-sm">
             {data.map((item, idx) => (
@@ -192,6 +184,11 @@ export default function TableKriteria() {
                 <td className="py-3 px-6">{item.kode}</td>
                 <td className="py-3 px-6">{item.kriteria}</td>
                 <td className="py-3 px-6 text-center">{item.bobot}</td>
+                <td className="py-3 px-6 text-center">
+                  {item.normalisasi !== undefined && item.normalisasi !== null
+                    ? item.normalisasi
+                    : "-"}
+                </td>
                 <td className="py-3 px-6 flex justify-center space-x-4">
                   <button
                     onClick={() => openEditPopup(item)}
@@ -214,6 +211,7 @@ export default function TableKriteria() {
         )}
       </table>
 
+      {/* Popup CRUD */}
       {popupOpen && (
         <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-40 z-50">
           <div className="bg-white rounded shadow-lg p-6 w-full max-w-md">

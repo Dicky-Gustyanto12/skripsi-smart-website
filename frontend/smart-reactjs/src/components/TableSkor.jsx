@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 
-export default function TableHasilRekomendasi() {
+export default function TableSkor() {
   const [penilaianAll, setPenilaianAll] = useState([]);
   const [kriteriaAll, setKriteriaAll] = useState([]);
   const [poktanMap, setPoktanMap] = useState({});
@@ -61,7 +61,7 @@ export default function TableHasilRekomendasi() {
   }));
 
   // Matriks nilai akhir
-  let resultMatrix = matrixNorm.map((row) => {
+  const resultMatrix = matrixNorm.map((row) => {
     const skorPerKolom = row.norm.map((val, i) => val * bobotNormal[i]);
     const total = skorPerKolom.reduce((a, b) => a + b, 0);
     return {
@@ -72,19 +72,13 @@ export default function TableHasilRekomendasi() {
     };
   });
 
-  // Tambahkan ranking dan urutkan dari total tertinggi
-  resultMatrix = resultMatrix
-    .sort((a, b) => b.total - a.total)
-    .map((row, i) => ({ ...row, rank: i + 1 }));
-
   return (
     <div className="p-2 w-full">
-      <h2 className="font-bold mb-4 text-lg">Hasil Rekomendasi SMART</h2>
+      <h2 className="font-bold mb-4 text-lg">Nilai Akhir Metode SMART</h2>
       <div className="overflow-x-auto w-full">
         <table className="w-full text-left">
           <thead>
             <tr className="bg-gray-200">
-              <th className="px-4 py-3 font-semibold">Ranking</th>
               <th className="px-4 py-3 font-semibold">Kode</th>
               <th className="px-4 py-3 font-semibold">Nama Poktan</th>
               {kriteriaCodes.map((code, i) => (
@@ -99,7 +93,7 @@ export default function TableHasilRekomendasi() {
             {loading ? (
               <tr>
                 <td
-                  colSpan={3 + kriteriaKeys.length + 1}
+                  colSpan={2 + kriteriaKeys.length + 1}
                   className="py-6 text-gray-400 text-center"
                 >
                   Memuat...
@@ -111,7 +105,6 @@ export default function TableHasilRekomendasi() {
                   key={row.kode}
                   className={idx % 2 === 0 ? "bg-white" : "bg-gray-50"}
                 >
-                  <td className="px-4 py-2 font-bold">{row.rank}</td>
                   <td className="px-4 py-2 font-semibold">{row.kode}</td>
                   <td className="px-4 py-2">{row.nama}</td>
                   {row.skor.map((val, i) => (

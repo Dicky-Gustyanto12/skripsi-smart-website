@@ -6,17 +6,23 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
+    /**
+     * Run the migrations.
+     */
     public function up(): void
     {
         Schema::create('kriteria', function (Blueprint $table) {
             $table->id('id_kriteria');
-            $table->string('kode', 10);
+            $table->string('kode')->unique();
             $table->string('kriteria');
-            $table->integer('bobot');
+            $table->float('bobot')->default(1);
             $table->timestamps();
         });
     }
 
+    /**
+     * Reverse the migrations.
+     */
     public function down(): void
     {
         Schema::dropIfExists('kriteria');

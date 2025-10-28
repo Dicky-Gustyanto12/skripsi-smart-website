@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 
-// Skeleton Loading Component
+// Skeleton Loader
 function TableSkeleton({ rows = 5 }) {
   return (
     <tbody>
@@ -24,6 +24,7 @@ function TableSkeleton({ rows = 5 }) {
 export default function TablePoktan() {
   const [data, setData] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
   const [popupOpen, setPopupOpen] = useState(false);
   const [editMode, setEditMode] = useState(false);
   const [formValues, setFormValues] = useState({
@@ -35,12 +36,17 @@ export default function TablePoktan() {
     nik: "",
   });
 
-  // Fetch data & set loading
+  // Fetch data: dengan error handling
   useEffect(() => {
     setLoading(true);
+    setErrorMsg("");
     fetch("http://localhost:8000/api/poktan")
-      .then((res) => res.json())
+      .then((res) => {
+        if (!res.ok) throw new Error("Gagal fetch, " + res.status);
+        return res.json();
+      })
       .then((result) => setData(result))
+      .catch((err) => setErrorMsg(err.message || "Gagal fetch data"))
       .finally(() => setLoading(false));
   }, []);
 
@@ -78,9 +84,16 @@ export default function TablePoktan() {
 
   const closePopup = () => setPopupOpen(false);
 
-  const handleSave = () => {
-    const { nama_poktan, desa, kecamatan, nomor_hp, nama_ketua, nik } =
-      formValues;
+  const handleSave = async () => {
+    const {
+      nama_poktan,
+      desa,
+      kecamatan,
+      nomor_hp,
+      nama_ketua,
+      nik,
+      id_poktan,
+    } = formValues;
     if (
       !nama_poktan ||
       !desa ||
@@ -93,62 +106,52 @@ export default function TablePoktan() {
       return;
     }
 
-    Swal.fire({
-      title: editMode ? "Konfirmasi Update?" : "Konfirmasi Tambah?",
-      icon: "question",
-      showCancelButton: true,
-      confirmButtonText: "Ya",
-      cancelButtonText: "Tidak",
-    }).then((result) => {
-      if (result.isConfirmed) {
-        setLoading(true);
-        if (editMode) {
-          fetch(`http://localhost:8000/api/poktan/${formValues.id_poktan}`, {
-            method: "PUT",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              nama_poktan,
-              desa,
-              kecamatan,
-              nomor_hp,
-              nama_ketua,
-              nik,
-            }),
-          })
-            .then((res) => res.json())
-            .then((updated) => {
-              setData((prev) =>
-                prev.map((d) =>
-                  d.id_poktan === updated.id_poktan ? updated : d
-                )
-              );
-              closePopup();
-              Swal.fire("Berhasil!", "Data berhasil diupdate.", "success");
-            })
-            .finally(() => setLoading(false));
-        } else {
-          fetch("http://localhost:8000/api/poktan", {
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({
-              nama_poktan,
-              desa,
-              kecamatan,
-              nomor_hp,
-              nama_ketua,
-              nik,
-            }),
-          })
-            .then((res) => res.json())
-            .then((newItem) => {
-              setData((prev) => [...prev, newItem]);
-              closePopup();
-              Swal.fire("Berhasil!", "Data berhasil ditambahkan.", "success");
-            })
-            .finally(() => setLoading(false));
-        }
+    try {
+      setLoading(true);
+      let res, updated;
+      if (editMode) {
+        res = await fetch(`http://localhost:8000/api/poktan/${id_poktan}`, {
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nama_poktan,
+            desa,
+            kecamatan,
+            nomor_hp,
+            nama_ketua,
+            nik,
+          }),
+        });
+        if (!res.ok) throw new Error("Gagal update data!");
+        updated = await res.json();
+        setData((prev) =>
+          prev.map((d) => (d.id_poktan === updated.id_poktan ? updated : d))
+        );
+        Swal.fire("Berhasil!", "Data berhasil diupdate.", "success");
+      } else {
+        res = await fetch("http://localhost:8000/api/poktan", {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({
+            nama_poktan,
+            desa,
+            kecamatan,
+            nomor_hp,
+            nama_ketua,
+            nik,
+          }),
+        });
+        if (!res.ok) throw new Error("Gagal tambah data!");
+        updated = await res.json();
+        setData((prev) => [...prev, updated]);
+        Swal.fire("Berhasil!", "Data berhasil ditambahkan.", "success");
       }
-    });
+      closePopup();
+    } catch (e) {
+      Swal.fire("Gagal!", e.message, "error");
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleDelete = (id_poktan) => {
@@ -166,83 +169,107 @@ export default function TablePoktan() {
         fetch(`http://localhost:8000/api/poktan/${id_poktan}`, {
           method: "DELETE",
         })
-          .then(() => {
+          .then((res) => {
+            if (!res.ok) throw new Error("Gagal hapus data!");
             setData((prev) => prev.filter((d) => d.id_poktan !== id_poktan));
             Swal.fire("Berhasil!", "Data berhasil dihapus.", "success");
           })
+          .catch((e) => Swal.fire("Gagal!", e.message, "error"))
           .finally(() => setLoading(false));
       }
     });
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Tabel Data Kelompok Tani</h2>
+    <div className="p-6 max-w-6xl mx-auto">
+      <h2 className="text-2xl font-bold mb-4 text-gray-800">
+        Tabel Data Kelompok Tani
+      </h2>
       <button
         onClick={openAddPopup}
-        className="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700 cursor-pointer"
+        className="mb-4 px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
       >
         Tambah Poktan
       </button>
-      <table className="min-w-full bg-white rounded shadow">
-        <thead className="bg-gray-200 text-gray-600 uppercase text-sm">
-          <tr>
-            <th className="py-3 px-6 text-left">No</th>
-            <th className="py-3 px-6 text-left">ID Poktan</th>
-            <th className="py-3 px-6 text-left">Nama Poktan</th>
-            <th className="py-3 px-6 text-left">Desa</th>
-            <th className="py-3 px-6 text-left">Kecamatan</th>
-            <th className="py-3 px-6 text-left">Nama Ketua</th>
-            <th className="py-3 px-6 text-left">NIK</th>
-            <th className="py-3 px-6 text-left">Nomor Hp</th>
-            <th className="py-3 px-6 text-left">Aksi</th>
-          </tr>
-        </thead>
-        {loading ? (
-          <TableSkeleton rows={5} />
-        ) : (
-          <tbody className="text-gray-600 text-sm">
-            {data.map((item, idx) => (
-              <tr
-                key={item.id_poktan}
-                className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"}
-              >
-                <td className="py-3 px-6">{idx + 1}</td>
-                <td className="py-3 px-6">{item.id_poktan}</td>
-                <td className="py-3 px-6">{item.nama_poktan}</td>
-                <td className="py-3 px-6">{item.desa}</td>
-                <td className="py-3 px-6">{item.kecamatan}</td>
-                <td className="py-3 px-6">{item.nama_ketua}</td>
-                <td className="py-3 px-6">{item.nik}</td>
-                <td className="py-3 px-6">{item.nomor_hp}</td>
-                <td className="py-3 px-6 space-x-4 flex">
-                  <button
-                    onClick={() => openEditPopup(item)}
-                    title="Edit"
-                    className="hover:text-blue-700 cursor-pointer"
-                  >
-                    <PencilSquareIcon className="h-5 w-5 text-blue-600 hover:text-blue-800" />
-                  </button>
-                  <button
-                    onClick={() => handleDelete(item.id_poktan)}
-                    title="Hapus"
-                    className="hover:text-red-700 cursor-pointer"
-                  >
-                    <TrashIcon className="h-5 w-5 text-red-600 hover:text-red-800" />
-                  </button>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        )}
-      </table>
+      {errorMsg && (
+        <div className="mb-4 border border-red-300 bg-red-100 text-red-700 px-4 py-2 rounded">
+          {errorMsg}
+        </div>
+      )}
+      <div className="overflow-x-auto bg-white rounded shadow">
+        <table className="min-w-full">
+          <thead className="bg-gray-200 text-gray-700 uppercase text-sm">
+            <tr>
+              <th className="py-3 px-6 text-left">No</th>
+              <th className="py-3 px-6 text-left">ID Poktan</th>
+              <th className="py-3 px-6 text-left">Nama Poktan</th>
+              <th className="py-3 px-6 text-left">Desa</th>
+              <th className="py-3 px-6 text-left">Kecamatan</th>
+              <th className="py-3 px-6 text-left">Nama Ketua</th>
+              <th className="py-3 px-6 text-left">NIK</th>
+              <th className="py-3 px-6 text-left">Nomor Hp</th>
+              <th className="py-3 px-6 text-left">Aksi</th>
+            </tr>
+          </thead>
+          {loading ? (
+            <TableSkeleton rows={5} />
+          ) : (
+            <tbody className="text-gray-700 text-sm">
+              {data.map((item, idx) => (
+                <tr
+                  key={item.id_poktan}
+                  className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"}
+                >
+                  <td className="py-3 px-6">{idx + 1}</td>
+                  <td className="py-3 px-6">{item.id_poktan}</td>
+                  <td className="py-3 px-6">{item.nama_poktan}</td>
+                  <td className="py-3 px-6">{item.desa}</td>
+                  <td className="py-3 px-6">{item.kecamatan}</td>
+                  <td className="py-3 px-6">{item.nama_ketua}</td>
+                  <td className="py-3 px-6">{item.nik}</td>
+                  <td className="py-3 px-6">{item.nomor_hp}</td>
+                  <td className="py-3 px-6 flex gap-2">
+                    <button
+                      onClick={() => openEditPopup(item)}
+                      title="Edit"
+                      className="hover:text-blue-700"
+                    >
+                      <PencilSquareIcon className="h-5 w-5 text-blue-600 hover:text-blue-800" />
+                    </button>
+                    <button
+                      onClick={() => handleDelete(item.id_poktan)}
+                      title="Hapus"
+                      className="hover:text-red-700"
+                    >
+                      <TrashIcon className="h-5 w-5 text-red-600 hover:text-red-800" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          )}
+        </table>
+      </div>
       {popupOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-40 flex items-center justify-center z-50">
-          <div className="bg-white rounded p-6 w-full max-w-md">
+          <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-lg relative">
             <h3 className="text-xl font-bold mb-4">
               {editMode ? "Edit Poktan" : "Tambah Poktan Baru"}
             </h3>
             <div className="space-y-3">
+              {editMode && (
+                <div>
+                  <label className="block text-gray-500 text-sm mb-1">
+                    ID Poktan
+                  </label>
+                  <input
+                    type="text"
+                    disabled
+                    value={formValues.id_poktan || ""}
+                    className="w-full border p-2 rounded bg-gray-100"
+                  />
+                </div>
+              )}
               <input
                 type="text"
                 name="nama_poktan"
@@ -292,16 +319,16 @@ export default function TablePoktan() {
                 className="w-full border p-2 rounded"
               />
             </div>
-            <div className="flex justify-end mt-4 space-x-3">
+            <div className="flex justify-end mt-5 space-x-3">
               <button
                 onClick={closePopup}
-                className="px-4 py-2 rounded border hover:bg-gray-100 cursor-pointer"
+                className="px-4 py-2 rounded border hover:bg-gray-100"
               >
                 Batal
               </button>
               <button
                 onClick={handleSave}
-                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700 cursor-pointer"
+                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
               >
                 Simpan
               </button>

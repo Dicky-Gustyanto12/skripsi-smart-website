@@ -16,7 +16,6 @@ class PoktanController extends Controller
     {
         $request->validate([
             'nama_poktan' => 'required',
-            'alamat' => 'required',
             'desa' => 'required',
             'kecamatan' => 'required',
             'nama_ketua' => 'required',
@@ -37,7 +36,6 @@ class PoktanController extends Controller
     {
         $request->validate([
             'nama_poktan' => 'required',
-            'alamat' => 'required',
             'desa' => 'required',
             'kecamatan' => 'required',
             'nama_ketua' => 'required',

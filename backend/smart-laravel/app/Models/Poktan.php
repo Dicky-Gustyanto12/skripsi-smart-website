@@ -14,7 +14,6 @@ class Poktan extends Model
     protected $fillable = [
         'id_poktan',
         'nama_poktan',
-        'alamat',
         'desa',
         'kecamatan',
         'nama_ketua',
