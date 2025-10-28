@@ -15,7 +15,11 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 Route::apiResource('poktan', PoktanController::class);
-Route::apiResource('pengajuan', PengajuanController::class);
+
+Route::get('/pengajuan', [PengajuanController::class, 'index']);
+Route::post('/pengajuan', [PengajuanController::class, 'store']);
+Route::put('/pengajuan/{id}', [PengajuanController::class, 'update']);
+
 Route::apiResource('kriteria', KriteriaController::class);
 
 Route::get('/parameter', [ParameterController::class, 'index']);

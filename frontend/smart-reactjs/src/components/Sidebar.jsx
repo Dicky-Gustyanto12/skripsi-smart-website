@@ -24,11 +24,6 @@ const menu = [
     icon: <UsersIcon className="h-5 w-5" />,
   },
   {
-    to: "/pengajuan",
-    label: "Data Pengajuan Alsintan",
-    icon: <DocumentTextIcon className="h-5 w-5" />,
-  },
-  {
     to: "/kriteria",
     label: "Kriteria",
     icon: <Squares2X2Icon className="h-5 w-5" />,
@@ -47,6 +42,11 @@ const menu = [
     to: "/status-alsintan",
     label: "Status Penerimaan Alsintan",
     icon: <UsersIcon className="h-5 w-5" />,
+  },
+  {
+    to: "/pengajuan",
+    label: "Data Rekap Penerimaan Alsintan",
+    icon: <DocumentTextIcon className="h-5 w-5" />,
   },
 ];
 

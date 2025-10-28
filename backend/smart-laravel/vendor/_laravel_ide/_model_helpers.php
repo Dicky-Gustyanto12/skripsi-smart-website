@@ -962,20 +962,24 @@ namespace App\Models {
      *
      * @property \Illuminate\Support\Carbon|null $updated_at
      * @property \Illuminate\Support\Carbon|null $created_at
+     * @property mixed $status
      * @property string $nomor_hp
      * @property string $nama_ketua
      * @property string $tipe
      * @property string $merek
      * @property string $nama_barang
      * @property string $nama_poktan
+     * @property string $id_poktan
      * @property string $id_pengajuan
      * @method static \Illuminate\Database\Eloquent\Builder<Pengajuan>|Pengajuan whereIdPengajuan($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Pengajuan>|Pengajuan whereIdPoktan($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Pengajuan>|Pengajuan whereNamaPoktan($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Pengajuan>|Pengajuan whereNamaBarang($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Pengajuan>|Pengajuan whereMerek($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Pengajuan>|Pengajuan whereTipe($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Pengajuan>|Pengajuan whereNamaKetua($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Pengajuan>|Pengajuan whereNomorHp($value)
+     * @method static \Illuminate\Database\Eloquent\Builder<Pengajuan>|Pengajuan whereStatus($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Pengajuan>|Pengajuan whereCreatedAt($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Pengajuan>|Pengajuan whereUpdatedAt($value)
      * @method static \Illuminate\Database\Eloquent\Builder<Pengajuan>|Pengajuan newModelQuery()

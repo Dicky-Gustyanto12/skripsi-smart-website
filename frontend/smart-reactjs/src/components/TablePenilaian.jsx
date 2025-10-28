@@ -132,8 +132,8 @@ export default function TablePenilaian() {
       showCancelButton: true,
       confirmButtonText: "Ya",
       cancelButtonText: "Tidak",
-      confirmButtonColor: "#4ade80",
-      cancelButtonColor: "#e5e7eb",
+      confirmButtonColor: "#059669",
+      cancelButtonColor: "#393939ff",
     }).then((result) => {
       if (result.isConfirmed) {
         setLoading(true);

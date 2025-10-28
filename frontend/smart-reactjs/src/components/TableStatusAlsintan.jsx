@@ -1,44 +1,44 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
 import { PencilSquareIcon } from "@heroicons/react/24/outline";
 
-export default function TableStat() {
-  const initialData = [
-    {
-      id: 1,
-      namaPoktan: "Poktan A",
-      namaBarang: "Traktor",
-      merek: "Kubota",
-      tipe: "L1",
-      namaPenerima: "Budi",
-      nomorHp: "08123456789",
-      status: "Proses",
-    },
-    {
-      id: 2,
-      namaPoktan: "Poktan B",
-      namaBarang: "Pompa Air",
-      merek: "Honda",
-      tipe: "X2",
-      namaPenerima: "Sari",
-      nomorHp: "08987654321",
-      status: "Proses",
-    },
-    {
-      id: 3,
-      namaPoktan: "Poktan C",
-      namaBarang: "Sprayer",
-      merek: "Yamaha",
-      tipe: "S1",
-      namaPenerima: "Agus",
-      nomorHp: "081298765432",
-      status: "Proses",
-    },
-  ];
+function TableSkeleton({ rows = 2 }) {
+  return (
+    <tbody>
+      {Array.from({ length: rows }).map((_, idx) => (
+        <tr key={idx} className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"}>
+          {Array(9)
+            .fill()
+            .map((_, col) => (
+              <td key={col} className="py-2 px-4 animate-pulse">
+                <div className="h-4 bg-gray-200 rounded w-full"></div>
+              </td>
+            ))}
+        </tr>
+      ))}
+    </tbody>
+  );
+}
 
-  const [data, setData] = useState(initialData);
-  const [editingItem, setEditingItem] = useState(null);
+export default function TablePengajuanEditStatus() {
+  const [data, setData] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [errorMsg, setErrorMsg] = useState("");
+  const [selected, setSelected] = useState(null);
   const [selectedStatus, setSelectedStatus] = useState("");
+
+  useEffect(() => {
+    setLoading(true);
+    setErrorMsg("");
+    fetch("http://localhost:8000/api/pengajuan")
+      .then((res) => {
+        if (!res.ok) throw new Error("Gagal fetch data: " + res.status);
+        return res.json();
+      })
+      .then((result) => setData(result))
+      .catch((err) => setErrorMsg(err.message || "Gagal fetch data"))
+      .finally(() => setLoading(false));
+  }, []);
 
   const getStatusClass = (status) => {
     switch (status) {
@@ -53,129 +53,118 @@ export default function TableStat() {
     }
   };
 
-  const openEditStatusPopup = (item) => {
-    setEditingItem(item);
-    setSelectedStatus(item.status);
-  };
-
-  const closeEditStatusPopup = () => {
-    setEditingItem(null);
-    setSelectedStatus("");
-  };
-
-  const handleSaveStatus = () => {
-    if (!selectedStatus) {
-      Swal.fire("Pilih status terlebih dahulu.", "", "warning");
-      return;
-    }
+  const openEditStatus = (item) => {
+    setSelected(item);
+    setSelectedStatus(item.status || "Proses");
     Swal.fire({
-      title: "Yakin ingin memperbarui status penerimaan ini?",
-      icon: "question",
+      title: "Ubah Status Pengajuan",
+      html: `
+        <div style="text-align:left">
+          <div><b>ID:</b> ${item.id_pengajuan}</div>
+          <div><b>Nama Poktan:</b> ${item.nama_poktan}</div>
+          <div><b>Nama Barang:</b> ${item.nama_barang}</div>
+          <div><b>Merek:</b> ${item.merek}</div>
+          <div><b>Tipe:</b> ${item.tipe}</div>
+          <div><b>Nama Ketua:</b> ${item.nama_ketua}</div>
+          <div><b>Nomor HP:</b> ${item.nomor_hp}</div>
+          <div class="mt-3"></div>
+          <label>Status: 
+            <select id="swal-input-status" class="swal2-input" style="width:180px">
+              <option value="Proses"${
+                item.status === "Proses" ? " selected" : ""
+              }>Proses</option>
+              <option value="Diterima"${
+                item.status === "Diterima" ? " selected" : ""
+              }>Diterima</option>
+              <option value="Batal"${
+                item.status === "Batal" ? " selected" : ""
+              }>Batal</option>
+            </select>
+          </label>
+        </div>`,
       showCancelButton: true,
       confirmButtonText: "Ya",
       cancelButtonText: "Tidak",
+      preConfirm: () => {
+        const status = document.getElementById("swal-input-status").value;
+        return { status };
+      },
     }).then((result) => {
       if (result.isConfirmed) {
-        setData((prevData) =>
-          prevData.map((item) =>
-            item.id === editingItem.id
-              ? { ...item, status: selectedStatus }
-              : item
+        setData((prev) =>
+          prev.map((d) =>
+            d.id_pengajuan === item.id_pengajuan
+              ? { ...d, status: result.value.status }
+              : d
           )
         );
-        closeEditStatusPopup();
-        Swal.fire("Berhasil!", "Status telah diperbarui.", "success");
+        Swal.fire("Berhasil!", "Status berhasil diperbarui.", "success");
       }
     });
   };
 
   return (
-    <div className="p-6">
-      <h2 className="text-2xl font-bold mb-4">Status Penerima Alsintan</h2>
-      <table className="min-w-full bg-white rounded shadow text-sm">
-        <thead className="bg-gray-200 text-gray-600 uppercase font-medium">
-          <tr>
-            <th className="py-2 px-4 text-left">ID</th>
-            <th className="py-2 px-4 text-left">Nama Poktan</th>
-            <th className="py-2 px-4 text-left">Nama Barang</th>
-            <th className="py-2 px-4 text-left">Merek</th>
-            <th className="py-2 px-4 text-left">Tipe</th>
-            <th className="py-2 px-4 text-left">Nama Penerima</th>
-            <th className="py-2 px-4 text-left">Nomor Hp</th>
-            <th className="py-2 px-4 text-left">Status</th>
-            <th className="py-2 px-4 text-left">Perbarui Status</th>
-          </tr>
-        </thead>
-        <tbody>
-          {data.map((item, idx) => (
-            <tr
-              key={item.id}
-              className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"}
-            >
-              <td className="py-2 px-4">{item.id}</td>
-              <td className="py-2 px-4">{item.namaPoktan}</td>
-              <td className="py-2 px-4">{item.namaBarang}</td>
-              <td className="py-2 px-4">{item.merek}</td>
-              <td className="py-2 px-4">{item.tipe}</td>
-              <td className="py-2 px-4">{item.namaPenerima}</td>
-              <td className="py-2 px-4">{item.nomorHp}</td>
-              <td className="py-2 px-4">
-                <span
-                  className={`px-2 py-1 rounded text-xs font-semibold ${getStatusClass(
-                    item.status
-                  )}`}
-                >
-                  {item.status}
-                </span>
-              </td>
-              <td className="py-2 px-4">
-                <button
-                  onClick={() => openEditStatusPopup(item)}
-                  className="text-blue-600 hover:text-blue-800 cursor-pointer"
-                  title="Edit Status"
-                >
-                  <PencilSquareIcon className="h-5 w-5" />
-                </button>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-
-      {/* Popup Edit Status */}
-      {editingItem && (
-        <div className="fixed inset-0 bg-black bg-opacity-40 flex justify-center items-center z-50">
-          <div className="bg-white p-6 rounded w-full max-w-sm">
-            <h3 className="text-lg font-bold mb-4">Perbarui Status</h3>
-            <select
-              className="w-full border p-2 rounded"
-              value={selectedStatus}
-              onChange={(e) => setSelectedStatus(e.target.value)}
-            >
-              <option value="" disabled>
-                Pilih status
-              </option>
-              <option value="Proses">Proses</option>
-              <option value="Diterima">Diterima</option>
-              <option value="Batal">Batal</option>
-            </select>
-            <div className="mt-4 flex justify-end space-x-3">
-              <button
-                onClick={closeEditStatusPopup}
-                className="px-4 py-2 rounded border hover:bg-gray-100"
-              >
-                Batal
-              </button>
-              <button
-                onClick={handleSaveStatus}
-                className="px-4 py-2 rounded bg-green-600 text-white hover:bg-green-700"
-              >
-                Simpan
-              </button>
-            </div>
-          </div>
+    <div className="p-2">
+      {errorMsg && (
+        <div className="mb-4 border border-red-300 bg-red-100 text-red-700 px-4 py-2 rounded">
+          {errorMsg}
         </div>
       )}
+      <div className="overflow-x-auto bg-white rounded shadow">
+        <table className="min-w-full text-sm">
+          <thead className="bg-gray-200 text-gray-700 uppercase font-bold">
+            <tr>
+              <th className="py-2 px-4 text-left">ID</th>
+              <th className="py-2 px-4 text-left">NAMA POKTAN</th>
+              <th className="py-2 px-4 text-left">NAMA BARANG</th>
+              <th className="py-2 px-4 text-left">MEREK</th>
+              <th className="py-2 px-4 text-left">TIPE</th>
+              <th className="py-2 px-4 text-left">NAMA KETUA</th>
+              <th className="py-2 px-4 text-left">NOMOR HP</th>
+              <th className="py-2 px-4 text-left">STATUS</th>
+              <th className="py-2 px-4 text-left">UPDATE STATUS</th>
+            </tr>
+          </thead>
+          {loading ? (
+            <TableSkeleton rows={3} />
+          ) : (
+            <tbody>
+              {data.map((item, idx) => (
+                <tr
+                  key={item.id_pengajuan || idx}
+                  className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"}
+                >
+                  <td className="py-2 px-4">{item.id_pengajuan}</td>
+                  <td className="py-2 px-4">{item.nama_poktan}</td>
+                  <td className="py-2 px-4">{item.nama_barang}</td>
+                  <td className="py-2 px-4">{item.merek}</td>
+                  <td className="py-2 px-4">{item.tipe}</td>
+                  <td className="py-2 px-4">{item.nama_ketua}</td>
+                  <td className="py-2 px-4">{item.nomor_hp}</td>
+                  <td className="py-2 px-4">
+                    <span
+                      className={`px-2 py-1 rounded text-xs font-semibold ${getStatusClass(
+                        item.status
+                      )}`}
+                    >
+                      {item.status}
+                    </span>
+                  </td>
+                  <td className="py-2 px-4">
+                    <button
+                      onClick={() => openEditStatus(item)}
+                      className="text-blue-600 hover:text-blue-800 cursor-pointer"
+                      title="Edit Status"
+                    >
+                      <PencilSquareIcon className="h-5 w-5" />
+                    </button>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          )}
+        </table>
+      </div>
     </div>
   );
 }
