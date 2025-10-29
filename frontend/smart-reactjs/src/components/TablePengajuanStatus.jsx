@@ -1,8 +1,8 @@
 import { useState, useEffect } from "react";
 import Swal from "sweetalert2";
-import { PencilSquareIcon } from "@heroicons/react/24/outline";
+import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 
-// Format tanggal ISO ke "dd/mm/yyyy" saja
+// Format tanggal ke "dd/mm/yyyy"
 function formatTanggalOnly(tgl) {
   if (!tgl) return "-";
   const d = new Date(tgl);
@@ -113,7 +113,7 @@ export default function TablePengajuanWithModal() {
     }
   };
 
-  // -- STATUS BADGE UTILITY
+  // Badge Status Utility
   const getStatusClass = (status) => {
     switch (status) {
       case "Diterima":
@@ -131,7 +131,7 @@ export default function TablePengajuanWithModal() {
     <tbody>
       {Array.from({ length: rows }).map((_, idx) => (
         <tr key={idx} className={idx % 2 === 0 ? "bg-gray-50" : "bg-white"}>
-          {Array(11)
+          {Array(12)
             .fill()
             .map((_, col) => (
               <td key={col} className="py-3 px-4 animate-pulse">
@@ -143,7 +143,7 @@ export default function TablePengajuanWithModal() {
     </tbody>
   );
 
-  // -- EDIT STATUS HANDLING
+  // Edit Status Handling
   const openEditStatusModal = (row) => {
     setEditStatusModal({ open: true, row, status: row.status });
   };
@@ -185,9 +185,37 @@ export default function TablePengajuanWithModal() {
     });
   };
 
+  // Delete Handling
+  const handleDelete = async (id_pengajuan) => {
+    Swal.fire({
+      title: "Konfirmasi",
+      text: `Yakin ingin menghapus pengajuan ${id_pengajuan} ?`,
+      icon: "warning",
+      showCancelButton: true,
+      confirmButtonText: "Ya",
+      cancelButtonText: "Tidak",
+    }).then(async (result) => {
+      if (result.isConfirmed) {
+        try {
+          const res = await fetch(
+            `http://localhost:8000/api/pengajuan/${id_pengajuan}`,
+            { method: "DELETE" }
+          );
+          if (!res.ok) throw new Error("Gagal hapus data!");
+          fetchPengajuan();
+          Swal.fire("Berhasil!", "Data pengajuan berhasil dihapus.", "success");
+        } catch (err) {
+          Swal.fire("Gagal!", err.message, "error");
+        }
+      }
+    });
+  };
+
   return (
     <div className="p-6">
-      <h2 className="text-3xl font-bold mb-6">Rekap Data Pengajuan Alsintan</h2>
+      <h2 className="text-3xl font-bold mb-6">
+        Tabel Data Pengajuan & Status Penerimaan Alsintan
+      </h2>
       <button
         onClick={openModal}
         className="mb-6 px-6 py-3 rounded bg-green-600 text-white hover:bg-green-700 transition"
@@ -213,6 +241,7 @@ export default function TablePengajuanWithModal() {
               <th className="py-3 px-4 text-left">STATUS</th>
               <th className="py-3 px-4 text-left">TANGGAL DIUPDATE</th>
               <th className="py-3 px-4 text-left">UPDATE STATUS</th>
+              <th className="py-3 px-4 text-left">HAPUS</th>
             </tr>
           </thead>
           {loading ? (
@@ -250,6 +279,15 @@ export default function TablePengajuanWithModal() {
                       onClick={() => openEditStatusModal(item)}
                     >
                       <PencilSquareIcon className="h-5 w-5" />
+                    </button>
+                  </td>
+                  <td className="py-3 px-4">
+                    <button
+                      className="text-red-600 hover:text-red-800"
+                      title="Hapus"
+                      onClick={() => handleDelete(item.id_pengajuan)}
+                    >
+                      <TrashIcon className="h-5 w-5" />
                     </button>
                   </td>
                 </tr>

@@ -40,11 +40,11 @@ const menu = [
   },
   {
     to: "/status-alsintan",
-    label: "Status Penerimaan Alsintan",
+    label: "Pengajuan & Status Penerimaan Alsintan",
     icon: <UsersIcon className="h-5 w-5" />,
   },
   {
-    to: "/pengajuan",
+    to: "/rekap",
     label: "Data Rekap Penerimaan Alsintan",
     icon: <DocumentTextIcon className="h-5 w-5" />,
   },
